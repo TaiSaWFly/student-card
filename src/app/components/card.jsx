@@ -1,18 +1,19 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import StudentCard from "./studentCard";
 import { fromStorage } from "../utils/fromStorage";
-import { useState } from "react";
+import { toStorage } from "../utils/toStorage";
 import FillingForm from "./fillingForm";
-import { useEffect } from "react";
 
 const Card = () => {
   const [form, setForm] = useState(false);
-  const localData = fromStorage("data");
-  console.log(localData);
+  const [data, setData] = useState(fromStorage("data"));
 
-  //   useEffect(() => {
-  //     fromStorage("data");
-  //   }, [localData]);
+  useEffect(() => {
+    if (!fromStorage("data")) {
+      toStorage("data", null);
+    }
+  }, [data]);
+
   const handleAddCard = () => {
     setForm((prevState) => !prevState);
   };
@@ -22,10 +23,10 @@ const Card = () => {
       <div className="student_card">
         <div className="student_card_wrapper">
           {form ? (
-            <FillingForm />
+            <FillingForm dataLocal={data} handleLocalStorage={setData} />
           ) : (
             <>
-              <StudentCard data={localData} />
+              <StudentCard data={data} />
               <button className="button" onClick={handleAddCard}>
                 Add
               </button>

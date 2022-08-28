@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from "react";
 import TextField from "./textField";
+import StudentCard from "./studentCard";
 import { validator } from "../utils/validator";
+import { validatorConfig } from "../utils/validatorConfig";
 import { toStorage } from "../utils/toStorage";
+import { fromStorage } from "../utils/fromStorage";
 
-const FillingForm = () => {
+const FillingForm = ({ handleLocalStorage, dataLocal }) => {
+  const [editMode, setEditMode] = useState(false);
+  const [isFormClose, setIsFormClose] = useState(false);
+  const [currentData, setCurrentData] = useState();
   const [data, setData] = useState({
     name: "",
     firstName: "",
@@ -12,47 +18,16 @@ const FillingForm = () => {
   });
   const [errors, setErrors] = useState({});
 
+  useEffect(() => {
+    validate();
+    if (editMode) {
+      setCurrentData(fromStorage("data"));
+    }
+  }, [data, editMode]);
+
   const handleChange = ({ target }) => {
     setData((prevState) => ({ ...prevState, [target.name]: target.value }));
   };
-
-  const validatorConfig = {
-    name: {
-      isRequired: {
-        message: "The 'Name': field is required!",
-      },
-    },
-    firstName: {
-      isRequired: {
-        message: "The 'First Name': field is required!",
-      },
-    },
-    birthday: {
-      isRequired: {
-        message: "The 'Your birthday': field is required!",
-      },
-      isNumberOfDigits: {
-        message: "The 'Your birthday': incorrectly filled!",
-      },
-      maxYear: {
-        message:
-          "The 'Your birthday': year cannot be greater than the current!",
-        value: new Date().getFullYear(),
-      },
-    },
-    portfolio: {
-      isRequired: {
-        message: "The 'Portfolio': field is required!",
-      },
-      isUrl: {
-        message: "The 'Portfolio': should be a link!",
-      },
-    },
-  };
-
-  useEffect(() => {
-    validate();
-  }, [data]);
 
   const validate = () => {
     const errors = validator(data, validatorConfig);
@@ -64,12 +39,31 @@ const FillingForm = () => {
     event.preventDefault();
     const isValid = validate();
     if (!isValid) return;
+
+    setIsFormClose(true);
+    toStorage("data", data);
+    handleLocalStorage(fromStorage("data"));
+  };
+
+  const handleNotChange = () => {
+    setData(currentData);
     toStorage("data", data);
   };
 
-  return (
+  const handleSaveChange = ({ target }) => {
+    handleChange({ target });
+    toStorage("data", data);
+  };
+
+  return isFormClose ? (
+    <StudentCard
+      data={dataLocal}
+      setIsFormClose={setIsFormClose}
+      setEditMode={setEditMode}
+    />
+  ) : (
     <>
-      <div className="student_card_title">Create</div>
+      <div className="student_card_title">{editMode ? "Edit" : "Create"}</div>
       <form onSubmit={handleSubmit} className="form">
         <TextField
           label="Name"
@@ -88,14 +82,16 @@ const FillingForm = () => {
           onChange={handleChange}
           error={errors.firstName}
         />
+
         <TextField
-          label="Your birthday"
+          label="Your Birthday Year"
           type="text"
           name="birthday"
           value={data.birthday}
           onChange={handleChange}
           error={errors.birthday}
         />
+
         <TextField
           label="Portfolio"
           type="text"
@@ -105,9 +101,20 @@ const FillingForm = () => {
           error={errors.portfolio}
         />
 
-        <button className="button" type="submit">
-          Create
-        </button>
+        {editMode ? (
+          <>
+            <button className="button" type="submit" onClick={handleNotChange}>
+              Cancel
+            </button>
+            <button className="button" type="submit" onClick={handleSaveChange}>
+              Save
+            </button>
+          </>
+        ) : (
+          <button className="button" type="submit">
+            Create
+          </button>
+        )}
       </form>
     </>
   );
